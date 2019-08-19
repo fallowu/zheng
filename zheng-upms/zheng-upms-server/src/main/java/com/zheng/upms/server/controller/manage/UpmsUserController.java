@@ -1,5 +1,6 @@
 package com.zheng.upms.server.controller.manage;
 
+import com.alibaba.fastjson.JSONArray;
 import com.baidu.unbiz.fluentvalidator.ComplexResult;
 import com.baidu.unbiz.fluentvalidator.FluentValidator;
 import com.baidu.unbiz.fluentvalidator.ResultCollectors;
@@ -14,7 +15,6 @@ import com.zheng.upms.rpc.api.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,7 @@ import java.util.UUID;
 @RequestMapping("/manage/user")
 public class UpmsUserController extends BaseController {
 
-    private static Logger _log = LoggerFactory.getLogger(UpmsUserController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpmsUserController.class);
 
     @Autowired
     private UpmsUserService upmsUserService;
@@ -87,23 +87,7 @@ public class UpmsUserController extends BaseController {
     @ResponseBody
     public Object organization(@PathVariable("id") int id, HttpServletRequest request) {
         String[] organizationIds = request.getParameterValues("organizationId");
-        // 删除旧记录
-        UpmsUserOrganizationExample upmsUserOrganizationExample = new UpmsUserOrganizationExample();
-        upmsUserOrganizationExample.createCriteria()
-                .andUserIdEqualTo(id);
-        upmsUserOrganizationService.deleteByExample(upmsUserOrganizationExample);
-        // 增加新记录
-        if (null != organizationIds) {
-            for (String organizationId : organizationIds) {
-                if (StringUtils.isBlank(organizationId)) {
-                    continue;
-                }
-                UpmsUserOrganization upmsUserOrganization = new UpmsUserOrganization();
-                upmsUserOrganization.setUserId(id);
-                upmsUserOrganization.setOrganizationId(NumberUtils.toInt(organizationId));
-                upmsUserOrganizationService.insertSelective(upmsUserOrganization);
-            }
-        }
+        upmsUserOrganizationService.organization(organizationIds, id);
         return new UpmsResult(UpmsResultConstant.SUCCESS, "");
     }
 
@@ -129,24 +113,27 @@ public class UpmsUserController extends BaseController {
     @ResponseBody
     public Object role(@PathVariable("id") int id, HttpServletRequest request) {
         String[] roleIds = request.getParameterValues("roleId");
-        // 删除旧记录
-        UpmsUserRoleExample upmsUserRoleExample = new UpmsUserRoleExample();
-        upmsUserRoleExample.createCriteria()
-                .andUserIdEqualTo(id);
-        upmsUserRoleService.deleteByExample(upmsUserRoleExample);
-        // 增加新记录
-        if (null != roleIds) {
-            for (String roleId : roleIds) {
-                if (StringUtils.isBlank(roleId)) {
-                    continue;
-                }
-                UpmsUserRole upmsUserRole = new UpmsUserRole();
-                upmsUserRole.setUserId(id);
-                upmsUserRole.setRoleId(NumberUtils.toInt(roleId));
-                upmsUserRoleService.insertSelective(upmsUserRole);
-            }
-        }
+        upmsUserRoleService.role(roleIds, id);
         return new UpmsResult(UpmsResultConstant.SUCCESS, "");
+    }
+
+    @ApiOperation(value = "用户权限")
+    @RequiresPermissions("upms:user:permission")
+    @RequestMapping(value = "/permission/{id}", method = RequestMethod.GET)
+    public String permission(@PathVariable("id") int id, ModelMap modelMap) {
+        UpmsUser user = upmsUserService.selectByPrimaryKey(id);
+        modelMap.put("user", user);
+        return "/manage/user/permission.jsp";
+    }
+
+    @ApiOperation(value = "用户权限")
+    @RequiresPermissions("upms:user:permission")
+    @RequestMapping(value = "/permission/{id}", method = RequestMethod.POST)
+    @ResponseBody
+    public Object permission(@PathVariable("id") int id, HttpServletRequest request) {
+        JSONArray datas = JSONArray.parseArray(request.getParameter("datas"));
+        upmsUserPermissionService.permission(datas, id);
+        return new UpmsResult(UpmsResultConstant.SUCCESS, datas.size());
     }
 
     @ApiOperation(value = "用户列表")
@@ -156,15 +143,20 @@ public class UpmsUserController extends BaseController {
     public Object list(
             @RequestParam(required = false, defaultValue = "0", value = "offset") int offset,
             @RequestParam(required = false, defaultValue = "10", value = "limit") int limit,
+            @RequestParam(required = false, defaultValue = "", value = "search") String search,
             @RequestParam(required = false, value = "sort") String sort,
             @RequestParam(required = false, value = "order") String order) {
         UpmsUserExample upmsUserExample = new UpmsUserExample();
-        upmsUserExample.setOffset(offset);
-        upmsUserExample.setLimit(limit);
         if (!StringUtils.isBlank(sort) && !StringUtils.isBlank(order)) {
             upmsUserExample.setOrderByClause(sort + " " + order);
         }
-        List<UpmsUser> rows = upmsUserService.selectByExample(upmsUserExample);
+        if (StringUtils.isNotBlank(search)) {
+            upmsUserExample.or()
+                    .andRealnameLike("%" + search + "%");
+            upmsUserExample.or()
+                    .andUsernameLike("%" + search + "%");
+        }
+        List<UpmsUser> rows = upmsUserService.selectByExampleForOffsetPage(upmsUserExample, offset, limit);
         long total = upmsUserService.countByExample(upmsUserExample);
         Map<String, Object> result = new HashMap<>();
         result.put("rows", rows);
@@ -196,10 +188,14 @@ public class UpmsUserController extends BaseController {
         long time = System.currentTimeMillis();
         String salt = UUID.randomUUID().toString().replaceAll("-", "");
         upmsUser.setSalt(salt);
-        upmsUser.setPassword(MD5Util.MD5(upmsUser.getPassword() + upmsUser.getSalt()));
+        upmsUser.setPassword(MD5Util.md5(upmsUser.getPassword() + upmsUser.getSalt()));
         upmsUser.setCtime(time);
-        int count = upmsUserService.insertSelective(upmsUser);
-        return new UpmsResult(UpmsResultConstant.SUCCESS, count);
+        upmsUser = upmsUserService.createUser(upmsUser);
+        if (null == upmsUser) {
+            return new UpmsResult(UpmsResultConstant.FAILED, "帐号名已存在！");
+        }
+        LOGGER.info("新增用户，主键：userId={}", upmsUser.getUserId());
+        return new UpmsResult(UpmsResultConstant.SUCCESS, 1);
     }
 
     @ApiOperation(value = "删除用户")

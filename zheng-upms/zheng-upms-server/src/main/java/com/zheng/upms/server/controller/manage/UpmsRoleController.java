@@ -41,7 +41,7 @@ import java.util.Map;
 @RequestMapping("/manage/role")
 public class UpmsRoleController extends BaseController {
 
-    private static Logger _log = LoggerFactory.getLogger(UpmsRoleController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpmsRoleController.class);
 
     @Autowired
     private UpmsRoleService upmsRoleService;
@@ -71,25 +71,8 @@ public class UpmsRoleController extends BaseController {
     @ResponseBody
     public Object permission(@PathVariable("id") int id, HttpServletRequest request) {
         JSONArray datas = JSONArray.parseArray(request.getParameter("datas"));
-        List<Integer> deleteIds = new ArrayList<>();
-        for (int i = 0; i < datas.size(); i ++) {
-            JSONObject json = datas.getJSONObject(i);
-            if (!json.getBoolean("checked")) {
-                deleteIds.add(json.getIntValue("id"));
-            } else {
-                // 加权限
-                UpmsRolePermission upmsRolePermission = new UpmsRolePermission();
-                upmsRolePermission.setRoleId(id);
-                upmsRolePermission.setPermissionId(json.getIntValue("id"));
-                upmsRolePermissionService.insertSelective(upmsRolePermission);
-            }
-        }
-        // 减权限
-        UpmsRolePermissionExample upmsRolePermissionExample = new UpmsRolePermissionExample();
-        upmsRolePermissionExample.createCriteria()
-            .andPermissionIdIn(deleteIds);
-        upmsRolePermissionService.deleteByExample(upmsRolePermissionExample);
-        return new UpmsResult(UpmsResultConstant.SUCCESS, datas.size());
+        int result = upmsRolePermissionService.rolePermission(datas, id);
+        return new UpmsResult(UpmsResultConstant.SUCCESS, result);
     }
 
     @ApiOperation(value = "角色列表")
@@ -99,15 +82,18 @@ public class UpmsRoleController extends BaseController {
     public Object list(
             @RequestParam(required = false, defaultValue = "0", value = "offset") int offset,
             @RequestParam(required = false, defaultValue = "10", value = "limit") int limit,
+            @RequestParam(required = false, defaultValue = "", value = "search") String search,
             @RequestParam(required = false, value = "sort") String sort,
             @RequestParam(required = false, value = "order") String order) {
         UpmsRoleExample upmsRoleExample = new UpmsRoleExample();
-        upmsRoleExample.setOffset(offset);
-        upmsRoleExample.setLimit(limit);
         if (!StringUtils.isBlank(sort) && !StringUtils.isBlank(order)) {
             upmsRoleExample.setOrderByClause(sort + " " + order);
         }
-        List<UpmsRole> rows = upmsRoleService.selectByExample(upmsRoleExample);
+        if (StringUtils.isNotBlank(search)) {
+            upmsRoleExample.or()
+                    .andTitleLike("%" + search + "%");
+        }
+        List<UpmsRole> rows = upmsRoleService.selectByExampleForOffsetPage(upmsRoleExample, offset, limit);
         long total = upmsRoleService.countByExample(upmsRoleExample);
         Map<String, Object> result = new HashMap<>();
         result.put("rows", rows);

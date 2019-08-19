@@ -46,7 +46,32 @@ public abstract class BaseServiceMock<Mapper, Record, Example> implements BaseSe
 	}
 
 	@Override
+	public List<Record> selectByExampleWithBLOBsForStartPage(Example example, Integer pageNum, Integer pageSize) {
+		return null;
+	}
+
+	@Override
+	public List<Record> selectByExampleForStartPage(Example example, Integer pageNum, Integer pageSize) {
+		return null;
+	}
+
+	@Override
+	public List<Record> selectByExampleWithBLOBsForOffsetPage(Example example, Integer offset, Integer limit) {
+		return null;
+	}
+
+	@Override
+	public List<Record> selectByExampleForOffsetPage(Example example, Integer offset, Integer limit) {
+		return null;
+	}
+
+	@Override
 	public Record selectFirstByExample(Example example) {
+		return null;
+	}
+
+	@Override
+	public Record selectFirstByExampleWithBLOBs(Example example) {
 		return null;
 	}
 

@@ -14,14 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
 * CmsPageService实现
-* Created by shuzheng on 2017/3/20.
+* Created by shuzheng on 2017/4/5.
 */
 @Service
 @Transactional
 @BaseService
 public class CmsPageServiceImpl extends BaseServiceImpl<CmsPageMapper, CmsPage, CmsPageExample> implements CmsPageService {
 
-    private static Logger _log = LoggerFactory.getLogger(CmsPageServiceImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CmsPageServiceImpl.class);
 
     @Autowired
     CmsPageMapper cmsPageMapper;

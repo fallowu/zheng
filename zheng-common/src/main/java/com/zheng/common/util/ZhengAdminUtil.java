@@ -13,7 +13,7 @@ import javax.servlet.ServletContext;
  */
 public class ZhengAdminUtil implements InitializingBean, ServletContextAware {
 
-    private static Logger _log = LoggerFactory.getLogger(ZhengAdminUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ZhengAdminUtil.class);
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -22,15 +22,15 @@ public class ZhengAdminUtil implements InitializingBean, ServletContextAware {
 
     @Override
     public void setServletContext(ServletContext servletContext) {
-        _log.info("===== 开始解压zheng-ui =====");
-        String version = PropertiesFileUtil.getInstance().get("zheng-ui.version");
-        _log.info("zheng-ui.jar 版本: {}", version);
-        String jarPath = servletContext.getRealPath("/WEB-INF/lib/zheng-ui-" + version + ".jar");
-        _log.info("zheng-ui.jar 包路径: {}", jarPath);
-        String resources = servletContext.getRealPath("/") + "/resources/zheng-ui";
-        _log.info("zheng-ui.jar 解压到: {}", resources);
+        LOGGER.info("===== 开始解压zheng-admin =====");
+        String version = PropertiesFileUtil.getInstance("zheng-admin-client").get("zheng.admin.version");
+        LOGGER.info("zheng-admin.jar 版本: {}", version);
+        String jarPath = servletContext.getRealPath("/WEB-INF/lib/zheng-admin-" + version + ".jar");
+        LOGGER.info("zheng-admin.jar 包路径: {}", jarPath);
+        String resources = servletContext.getRealPath("/") + "/resources/zheng-admin";
+        LOGGER.info("zheng-admin.jar 解压到: {}", resources);
         JarUtil.decompress(jarPath, resources);
-        _log.info("===== 解压zheng-ui完成 =====");
+        LOGGER.info("===== 解压zheng-admin完成 =====");
     }
 
 }

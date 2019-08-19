@@ -14,14 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
 * CmsCategoryTagService实现
-* Created by shuzheng on 2017/3/20.
+* Created by shuzheng on 2017/4/5.
 */
 @Service
 @Transactional
 @BaseService
 public class CmsCategoryTagServiceImpl extends BaseServiceImpl<CmsCategoryTagMapper, CmsCategoryTag, CmsCategoryTagExample> implements CmsCategoryTagService {
 
-    private static Logger _log = LoggerFactory.getLogger(CmsCategoryTagServiceImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CmsCategoryTagServiceImpl.class);
 
     @Autowired
     CmsCategoryTagMapper cmsCategoryTagMapper;

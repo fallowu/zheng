@@ -14,14 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
 * CmsCommentService实现
-* Created by shuzheng on 2017/3/20.
+* Created by shuzheng on 2017/4/5.
 */
 @Service
 @Transactional
 @BaseService
 public class CmsCommentServiceImpl extends BaseServiceImpl<CmsCommentMapper, CmsComment, CmsCommentExample> implements CmsCommentService {
 
-    private static Logger _log = LoggerFactory.getLogger(CmsCommentServiceImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CmsCommentServiceImpl.class);
 
     @Autowired
     CmsCommentMapper cmsCommentMapper;

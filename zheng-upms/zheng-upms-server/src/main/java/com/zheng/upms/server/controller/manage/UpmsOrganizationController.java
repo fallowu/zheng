@@ -34,7 +34,7 @@ import java.util.Map;
 @RequestMapping("/manage/organization")
 public class UpmsOrganizationController extends BaseController {
 
-    private static Logger _log = LoggerFactory.getLogger(UpmsOrganizationController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpmsOrganizationController.class);
 
     @Autowired
     private UpmsOrganizationService upmsOrganizationService;
@@ -53,15 +53,18 @@ public class UpmsOrganizationController extends BaseController {
     public Object list(
             @RequestParam(required = false, defaultValue = "0", value = "offset") int offset,
             @RequestParam(required = false, defaultValue = "10", value = "limit") int limit,
+            @RequestParam(required = false, defaultValue = "", value = "search") String search,
             @RequestParam(required = false, value = "sort") String sort,
             @RequestParam(required = false, value = "order") String order) {
         UpmsOrganizationExample upmsOrganizationExample = new UpmsOrganizationExample();
-        upmsOrganizationExample.setOffset(offset);
-        upmsOrganizationExample.setLimit(limit);
         if (!StringUtils.isBlank(sort) && !StringUtils.isBlank(order)) {
             upmsOrganizationExample.setOrderByClause(sort + " " + order);
         }
-        List<UpmsOrganization> rows = upmsOrganizationService.selectByExample(upmsOrganizationExample);
+        if (StringUtils.isNotBlank(search)) {
+            upmsOrganizationExample.or()
+                    .andNameLike("%" + search + "%");
+        }
+        List<UpmsOrganization> rows = upmsOrganizationService.selectByExampleForOffsetPage(upmsOrganizationExample, offset, limit);
         long total = upmsOrganizationService.countByExample(upmsOrganizationExample);
         Map<String, Object> result = new HashMap<>();
         result.put("rows", rows);
